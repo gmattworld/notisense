@@ -11,7 +11,7 @@ permissions:
 env:
   PYTHON_VERSION: "3.13"
   APP_DIR: "."                       # repo root
-  PKG_ROOT: "notisense_api"          # <-- root package folder to appear at ZIP top-level
+  PKG_ROOT: "src/notisense_api"          # <-- root package folder to appear at ZIP top-level
   ZIP_NAME: "notisense.zip"
   S3_BUCKET: "notisense"             # no underscores
   LAMBDA_NAME: "notisense-api"
