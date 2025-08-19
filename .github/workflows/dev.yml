@@ -10,9 +10,10 @@ permissions:
 
 env:
   PYTHON_VERSION: "3.13"
-  APP_DIR: "."                       # folder containing your Lambda handler
+  APP_DIR: "."                       # repo root
+  PKG_ROOT: "notisense_api"          # <-- root package folder to appear at ZIP top-level
   ZIP_NAME: "notisense.zip"
-  S3_BUCKET: "notisense"  # no underscores
+  S3_BUCKET: "notisense"             # no underscores
   LAMBDA_NAME: "notisense-api"
 
 concurrency:
@@ -56,7 +57,7 @@ jobs:
 
       - name: Ensure lock is up-to-date (no update)
         run: |
-          poetry lock #--no-update --no-ansi
+          poetry lock
 
       - name: Install dependencies (Poetry)
         run: |
@@ -69,24 +70,34 @@ jobs:
           poetry run python -c "import sys; print('Python OK:', sys.version)"
           # poetry run pytest -q
 
-      - name: Build Lambda package
+      - name: Build Lambda package (ensure notisense_api is at ZIP root)
         run: |
           set -euo pipefail
           rm -rf package "${{ env.ZIP_NAME }}"
+
           # Export runtime deps only (dev/test groups excluded)
           poetry export -f requirements.txt --output requirements.txt --without-hashes
           python -m pip install --upgrade pip
           python -m pip install -r requirements.txt -t package
 
-          # Copy application code, skip unwanted files
-          rsync -a "${{ env.APP_DIR }}/" package/ \
-            --exclude ".git/" --exclude ".github/" --exclude ".venv/" \
-            --exclude "__pycache__/" --exclude "tests/" --exclude "*.pyc"
+          # Sanity check: package root must exist
+          if [ ! -d "${{ env.PKG_ROOT }}" ]; then
+            echo "ERROR: Expected package folder '${{ env.PKG_ROOT }}' not found at repo root."
+            exit 1
+          fi
 
-          # Include top-level handler if present
+          # Copy your application package so it sits at the ZIP root as notisense_api/
+          mkdir -p package/${{ env.PKG_ROOT }}
+          rsync -a "${{ env.PKG_ROOT }}/" "package/${{ env.PKG_ROOT }}/" \
+            --exclude "__pycache__/" --exclude "*.pyc"
+
+          # Optionally include your Lambda entrypoint at the root (e.g., main.py for handler=main.handler)
           if [ -f "main.py" ]; then cp main.py package/; fi
 
-          # Zip contents
+          # Copy any other top-level modules you import directly (optional)
+          # cp -r src_shared/ package/src_shared/  # example
+
+          # Zip the contents so that notisense_api/ is at the root of the archive
           (cd package && zip -r9 "../${{ env.ZIP_NAME }}" .)
           ls -lh "${{ env.ZIP_NAME }}"
 
