@@ -1,0 +1,10 @@
+.env
+.idea/
+.venv/
+/venv/
+
+.vscode/
+.DS_Store
+.cursorrules
+
+*__pycache__*
