@@ -6,14 +6,15 @@ on:
 
 permissions:
   contents: read
-  id-token: write  # for AWS OIDC
+  id-token: write
 
 env:
   PYTHON_VERSION: "3.13"
-  APP_DIR: "."                       # repo root
-  PKG_ROOT: "src/notisense_api"          # <-- root package folder to appear at ZIP top-level
+  APP_DIR: "."
+  SRC_PKG_ROOT: "src/notisense_api"
+  PKG_ROOT: "notisense_api"
   ZIP_NAME: "notisense.zip"
-  S3_BUCKET: "notisense"             # no underscores
+  S3_BUCKET: "notisense"
   LAMBDA_NAME: "notisense-api"
 
 concurrency:
@@ -88,7 +89,7 @@ jobs:
 
           # Copy your application package so it sits at the ZIP root as notisense_api/
           mkdir -p package/${{ env.PKG_ROOT }}
-          rsync -a "${{ env.PKG_ROOT }}/" "package/${{ env.PKG_ROOT }}/" \
+          rsync -a "${{ env.SRC_PKG_ROOT }}/" "package/${{ env.PKG_ROOT }}/" \
             --exclude "__pycache__/" --exclude "*.pyc"
 
           # Optionally include your Lambda entrypoint at the root (e.g., main.py for handler=main.handler)
